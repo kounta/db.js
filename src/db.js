@@ -611,20 +611,36 @@
                 throw new Error('Unrecognized event type ' + eventName);
             }
             if (eventName === 'error') {
-                db.addEventListener(eventName, function (e) {
+                var h = function (e) {
                     e.preventDefault(); // Needed by Firefox to prevent hard abort with ConstraintError
                     handler(e);
-                });
+                };
+                // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: addEventListener
+                if (db.addEventListener) {
+                    db.addEventListener(eventName, h);
+                } else {
+                    db['on' + eventName] = h;
+                }
                 return;
             }
-            db.addEventListener(eventName, handler);
+            // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: addEventListener
+            if (db.addEventListener) {
+                db.addEventListener(eventName, handler);
+            } else {
+                db['on' + eventName] = handler;
+            }
         };
 
         this.removeEventListener = function (eventName, handler) {
             if (!serverEvents.includes(eventName)) {
                 throw new Error('Unrecognized event type ' + eventName);
             }
-            db.removeEventListener(eventName, handler);
+            // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: removeEventListener
+            if (db.removeEventListener) {
+                db.removeEventListener(eventName, handler);
+            } else {
+                db['on' + eventName] = null;
+            }
         };
 
         serverEvents.forEach(function (evName) {
