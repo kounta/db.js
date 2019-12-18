@@ -3,7 +3,7 @@
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -71,12 +71,10 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
     }
     function mongoifyKey(key) {
         if (key && (typeof key === 'undefined' ? 'undefined' : _typeof(key)) === 'object' && !(key instanceof IDBKeyRange)) {
-            var _mongoDBToKeyRangeArg = mongoDBToKeyRangeArgs(key);
-
-            var _mongoDBToKeyRangeArg2 = _slicedToArray(_mongoDBToKeyRangeArg, 2);
-
-            var type = _mongoDBToKeyRangeArg2[0];
-            var args = _mongoDBToKeyRangeArg2[1];
+            var _mongoDBToKeyRangeArg = mongoDBToKeyRangeArgs(key),
+                _mongoDBToKeyRangeArg2 = _slicedToArray(_mongoDBToKeyRangeArg, 2),
+                type = _mongoDBToKeyRangeArg2[0],
+                args = _mongoDBToKeyRangeArg2[1];
 
             return IDBKeyRange[type].apply(IDBKeyRange, _toConsumableArray(args));
         }
@@ -147,56 +145,46 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                             counter = limitRange[0];
                             cursor.advance(limitRange[0]); // Will throw on 0, but condition above prevents since counter always 0+
                         } else if (limitRange !== null && counter >= limitRange[0] + limitRange[1]) {
-                                // Out of limit range... skip
-                            } else {
-                                    var _ret = function () {
-                                        var matchFilter = true;
-                                        var result = 'value' in cursor ? cursor.value : cursor.key;
+                            // Out of limit range... skip
+                        } else {
+                            var matchFilter = true;
+                            var result = 'value' in cursor ? cursor.value : cursor.key;
 
-                                        try {
-                                            filters.forEach(function (filter) {
-                                                if (typeof filter[0] === 'function') {
-                                                    matchFilter = matchFilter && filter[0](result);
-                                                } else {
-                                                    matchFilter = matchFilter && result[filter[0]] === filter[1];
-                                                }
-                                            });
-                                        } catch (err) {
-                                            // Could be filter on non-object or error in filter function
-                                            reject(err);
-                                            return {
-                                                v: void 0
-                                            };
-                                        }
+                            try {
+                                filters.forEach(function (filter) {
+                                    if (typeof filter[0] === 'function') {
+                                        matchFilter = matchFilter && filter[0](result);
+                                    } else {
+                                        matchFilter = matchFilter && result[filter[0]] === filter[1];
+                                    }
+                                });
+                            } catch (err) {
+                                // Could be filter on non-object or error in filter function
+                                reject(err);
+                                return;
+                            }
 
-                                        if (matchFilter) {
-                                            counter++;
-                                            // If we're doing a modify, run it now
-                                            if (modifyObj) {
-                                                try {
-                                                    result = modifyRecord(result);
-                                                    cursor.update(result); // `result` should only be a "structured clone"-able object
-                                                } catch (err) {
-                                                    reject(err);
-                                                    return {
-                                                        v: void 0
-                                                    };
-                                                }
-                                            }
-                                            try {
-                                                results.push(mapper(result));
-                                            } catch (err) {
-                                                reject(err);
-                                                return {
-                                                    v: void 0
-                                                };
-                                            }
-                                        }
-                                        cursor.continue();
-                                    }();
-
-                                    if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+                            if (matchFilter) {
+                                counter++;
+                                // If we're doing a modify, run it now
+                                if (modifyObj) {
+                                    try {
+                                        result = modifyRecord(result);
+                                        cursor.update(result); // `result` should only be a "structured clone"-able object
+                                    } catch (err) {
+                                        reject(err);
+                                        return;
+                                    }
                                 }
+                                try {
+                                    results.push(mapper(result));
+                                } catch (err) {
+                                    reject(err);
+                                    return;
+                                }
+                            }
+                            cursor.continue();
+                        }
                     }
                 };
             });
@@ -696,20 +684,36 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 throw new Error('Unrecognized event type ' + eventName);
             }
             if (eventName === 'error') {
-                db.addEventListener(eventName, function (e) {
+                var h = function h(e) {
                     e.preventDefault(); // Needed by Firefox to prevent hard abort with ConstraintError
                     handler(e);
-                });
+                };
+                // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: addEventListener
+                if (db.addEventListener) {
+                    db.addEventListener(eventName, h);
+                } else {
+                    db['on' + eventName] = h;
+                }
                 return;
             }
-            db.addEventListener(eventName, handler);
+            // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: addEventListener
+            if (db.addEventListener) {
+                db.addEventListener(eventName, handler);
+            } else {
+                db['on' + eventName] = handler;
+            }
         };
 
         this.removeEventListener = function (eventName, handler) {
             if (!serverEvents.includes(eventName)) {
                 throw new Error('Unrecognized event type ' + eventName);
             }
-            db.removeEventListener(eventName, handler);
+            // On Safari of iOS 8.* or 9.*, IDBDatabase doesn't have the method: removeEventListener
+            if (db.removeEventListener) {
+                db.removeEventListener(eventName, handler);
+            } else {
+                db['on' + eventName] = null;
+            }
         };
 
         serverEvents.forEach(function (evName) {
@@ -773,25 +777,25 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             if (db.objectStoreNames.contains(tableName)) {
                 store = request.transaction.objectStore(tableName); // Shouldn't throw
             } else {
-                    // Errors for which we are not concerned and why:
-                    // `InvalidStateError` - We are in the upgrade transaction.
-                    // `ConstraintError` - We are just starting (and probably never too large anyways) for a key generator.
-                    // `ConstraintError` - The above condition should prevent the name already existing.
-                    //
-                    // Possible errors:
-                    // `TransactionInactiveError` - if the upgrade had already aborted,
-                    //      e.g., from a previous `QuotaExceededError` which is supposed to nevertheless return
-                    //      the store but then abort the transaction.
-                    // `SyntaxError` - if an invalid `table.key.keyPath` is supplied.
-                    // `InvalidAccessError` - if `table.key.autoIncrement` is `true` and `table.key.keyPath` is an
-                    //      empty string or any sequence (empty or otherwise).
-                    try {
-                        store = db.createObjectStore(tableName, table.key);
-                    } catch (err) {
-                        ret = err;
-                        return true;
-                    }
+                // Errors for which we are not concerned and why:
+                // `InvalidStateError` - We are in the upgrade transaction.
+                // `ConstraintError` - We are just starting (and probably never too large anyways) for a key generator.
+                // `ConstraintError` - The above condition should prevent the name already existing.
+                //
+                // Possible errors:
+                // `TransactionInactiveError` - if the upgrade had already aborted,
+                //      e.g., from a previous `QuotaExceededError` which is supposed to nevertheless return
+                //      the store but then abort the transaction.
+                // `SyntaxError` - if an invalid `table.key.keyPath` is supplied.
+                // `InvalidAccessError` - if `table.key.autoIncrement` is `true` and `table.key.keyPath` is an
+                //      empty string or any sequence (empty or otherwise).
+                try {
+                    store = db.createObjectStore(tableName, table.key);
+                } catch (err) {
+                    ret = err;
+                    return true;
                 }
+            }
 
             Object.keys(table.indexes || {}).some(function (indexKey) {
                 try {
@@ -849,56 +853,50 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                         }
                     }, server, version, noServerMethods).then(resolve, reject);
                 } else {
-                    var _ret2 = function () {
-                        if (typeof schema === 'function') {
-                            try {
-                                schema = schema();
-                            } catch (e) {
-                                reject(e);
-                                return {
-                                    v: void 0
-                                };
-                            }
+                    if (typeof schema === 'function') {
+                        try {
+                            schema = schema();
+                        } catch (e) {
+                            reject(e);
+                            return;
                         }
-                        var request = indexedDB.open(server, version);
+                    }
+                    var request = indexedDB.open(server, version);
 
-                        request.onsuccess = function (e) {
-                            return _open(e, server, version, noServerMethods).then(resolve, reject);
-                        };
-                        request.onerror = function (e) {
-                            // Prevent default for `BadVersion` and `AbortError` errors, etc.
-                            // These are not necessarily reported in console in Chrome but present; see
-                            //  https://bugzilla.mozilla.org/show_bug.cgi?id=872873
-                            //  http://stackoverflow.com/questions/36225779/aborterror-within-indexeddb-upgradeneeded-event/36266502
-                            e.preventDefault();
-                            reject(e);
-                        };
-                        request.onupgradeneeded = function (e) {
-                            var err = createSchema(e, request, schema, e.target.result, server, version);
-                            if (err) {
-                                reject(err);
-                            }
-                        };
-                        request.onblocked = function (e) {
-                            var resume = new Promise(function (res, rej) {
-                                // We overwrite handlers rather than make a new
-                                //   open() since the original request is still
-                                //   open and its onsuccess will still fire if
-                                //   the user unblocks by closing the blocking
-                                //   connection
-                                request.onsuccess = function (ev) {
-                                    _open(ev, server, version, noServerMethods).then(res, rej);
-                                };
-                                request.onerror = function (e) {
-                                    return rej(e);
-                                };
-                            });
-                            e.resume = resume;
-                            reject(e);
-                        };
-                    }();
-
-                    if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+                    request.onsuccess = function (e) {
+                        return _open(e, server, version, noServerMethods).then(resolve, reject);
+                    };
+                    request.onerror = function (e) {
+                        // Prevent default for `BadVersion` and `AbortError` errors, etc.
+                        // These are not necessarily reported in console in Chrome but present; see
+                        //  https://bugzilla.mozilla.org/show_bug.cgi?id=872873
+                        //  http://stackoverflow.com/questions/36225779/aborterror-within-indexeddb-upgradeneeded-event/36266502
+                        e.preventDefault();
+                        reject(e);
+                    };
+                    request.onupgradeneeded = function (e) {
+                        var err = createSchema(e, request, schema, e.target.result, server, version);
+                        if (err) {
+                            reject(err);
+                        }
+                    };
+                    request.onblocked = function (e) {
+                        var resume = new Promise(function (res, rej) {
+                            // We overwrite handlers rather than make a new
+                            //   open() since the original request is still
+                            //   open and its onsuccess will still fire if
+                            //   the user unblocks by closing the blocking
+                            //   connection
+                            request.onsuccess = function (ev) {
+                                _open(ev, server, version, noServerMethods).then(res, rej);
+                            };
+                            request.onerror = function (e) {
+                                return rej(e);
+                            };
+                        });
+                        e.resume = resume;
+                        reject(e);
+                    };
                 }
             });
         },
