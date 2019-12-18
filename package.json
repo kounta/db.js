@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/kounta/db.js"
   },
+  "publishConfig": {
+    "registry":"https://npm.pkg.github.com/"
+  },
   "license": "UNLICENSED",
   "main": "dist/db.min.js",
   "engines": {
