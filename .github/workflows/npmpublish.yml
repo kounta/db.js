@@ -15,7 +15,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-  publish-gpr:
+  publish:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -23,9 +23,14 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 10
-          registry-url: https://npm.pkg.github.com/
-          scope: '@kounta'
-      - run: npm ci
-      - run: npm publish
+      - run: |
+          echo "@lightspeedretail:registry=https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/" > .npmrc
+          echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:_password=\${NPM_ARTIFACTORY_PASSWORD}" >> .npmrc
+          echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:username=\${NPM_ARTIFACTORY_USER}" >> .npmrc
+          echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:email=ci@lightspeedhq.com" >> .npmrc
+          echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:always-auth=true" >> .npmrc
+          npm ci
+          npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          NPM_ARTIFACTORY_USER: ls-kounta-dbjs-ci
+          NPM_ARTIFACTORY_PASSWORD: ${{secrets.NPM_JFROG_BASE64_TOKEN}}
