@@ -1,5 +1,5 @@
 {
-  "name": "@kounta/db.js",
+  "name": "@lightspeed-hospitality/db.js",
   "description": "db.js is a wrapper for IndexedDB to make it easier to work against, making it look more like a queryable API.",
   "version": "1.0.4",
   "author": "Kounta <devops@kounta.com>",
@@ -8,7 +8,7 @@
     "url": "https://github.com/kounta/db.js"
   },
   "publishConfig": {
-    "registry":"https://npm.pkg.github.com/"
+    "registry":"https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/"
   },
   "license": "UNLICENSED",
   "main": "dist/db.min.js",
