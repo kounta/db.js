@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 10
       - run: |
-          echo "@lightspeedretail:registry=https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/" > .npmrc
+          echo "@lightspeed-hospitality:registry=https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/" > .npmrc
           echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:_password=\${NPM_ARTIFACTORY_PASSWORD}" >> .npmrc
           echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:username=\${NPM_ARTIFACTORY_USER}" >> .npmrc
           echo "//lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:email=ci@lightspeedhq.com" >> .npmrc
