@@ -1,5 +1,5 @@
 {
-  "name": "@lightspeed-hospitality/db.js",
+  "name": "@kounta/db.js",
   "description": "db.js is a wrapper for IndexedDB to make it easier to work against, making it look more like a queryable API.",
   "version": "1.0.4",
   "author": "Kounta <devops@kounta.com>",
