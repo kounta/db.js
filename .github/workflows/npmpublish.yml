@@ -24,13 +24,7 @@ jobs:
         with:
           node-version: 10
       - run: |
-          npm config set @kounta:registry https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/
-          npm config set //lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:_password \${NPM_ARTIFACTORY_PASSWORD}
-          npm config set //lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:username \${NPM_ARTIFACTORY_USER}
-          npm config set //lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:email ci@lightspeedhq.com
-          npm config set //lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/:always-auth true
+          npm config set //npm.pkg.github.com/:always-auth true
+          npm config set //npm.pkg.github.com/:_authToken \${GITHUB_TOKEN}
           npm ci
           npm publish
-        env:
-          NPM_ARTIFACTORY_USER: ls-kounta-dbjs-ci
-          NPM_ARTIFACTORY_PASSWORD: ${{secrets.NPM_JFROG_BASE64_TOKEN}}

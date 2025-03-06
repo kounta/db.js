@@ -8,7 +8,7 @@
     "url": "https://github.com/kounta/db.js"
   },
   "publishConfig": {
-    "registry":"https://lightspeedhq.jfrog.io/lightspeedhq/api/npm/npm-local/"
+    "registry":"https://npm.pkg.github.com"
   },
   "license": "UNLICENSED",
   "main": "dist/db.min.js",
